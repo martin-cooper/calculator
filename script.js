@@ -6,19 +6,19 @@ let operations = [];
 
 
 function add(a, b){
-    return a + b;
+    return (Number)(a + b);
 }
 
 function subtract(a, b){
-    return a - b;
+    return (Number)(a - b);
 }
 
 function multiply(a, b){
-    return a*b;
+    return (Number)(a*b);
 }
 
 function divide(a,b){
-    return a/b;
+    return (Number)(a/b);
 }
 
 function operate(operator, a, b){
@@ -64,29 +64,64 @@ function addDigit(digitElement){
     console.log(digit);
     //If there are no operations, creates a new one with the given digit and no operation
     if(operations.length == 0){
-        newNode(digit);
+        newNode(digit, "end");
     } else if(operations[operations.length - 1].operation !== "end"){
         //Need more robustness I think
-        newNode(digit)
+        newNode(digit, "end")
     } else{
         //Adds new digit that was pressed to end of the latest number
         let currentDigit = operations[operations.length -1].number;
         let newNumber = (currentDigit.toString() + digit.toString());
         console.log(newNumber)
-        operations[operations.length -1].number = newNumber; 
+        operations[operations.length -1].number = parseInt(newNumber); 
     }
 }
 function addOperator(operatorElement){
     let operator = operatorElement.textContent;
-
+    //-1 is allowed as the first operator treat it as a -1 multiplying the next incoming number
+    if(operator === "-" && operations.length == 0){
+        newNode(-1, "*");
+    } else if(operations.length > 0){
+        //Requires there to be a number to operate on
+        operations[operations.length - 1].operation = operator;
+    }
 }
 
-function newNode(digit){
+function newNode(digit, op){
     operations.push({
         number: digit,
-        operation: "end"
+        operation: op
     })
 }
 function compute(){
+    for(let i  = 0; i < operations.length - 1; i++){
+        let currentOp = operations[i].operation;
+        if(currentOp === "*" || currentOp == "/"){
+            //Calculates using current number and operation as well as the next number
+            result = operate(currentOp, operations[i].number, operations[i + 1].number);
 
+            operations[i].number = result;
+            operations[i].operation = operations[i + 1].operation;
+
+            operations.splice(i + 1, 1);
+            i--;
+
+        }
+    }
+    //Repeated to allow for order of operations
+    for(let i  = 0; i < operations.length - 1; i++){
+        let currentOp = operations[i].operation;
+        if(currentOp === "-" || currentOp == "+"){
+            //Calculates using current number and operation as well as the next number
+            result = operate(currentOp, operations[i].number, operations[i + 1].number);
+
+            operations[i].number = result;
+            operations[i].operation = operations[i + 1].operation;
+
+            operations.splice(i + 1, 1);
+            i--;
+
+        }
+    }
+    document.querySelector("#screen").textContent += Math.round(operations[0].number*100)/100;
 }
