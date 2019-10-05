@@ -1,6 +1,10 @@
 //Main code area
 initializeListeners();
 const screen = document.querySelector("#screen");
+const typingScreen = screen.querySelector("#top");
+const resultScreen = screen.querySelector("#bottom");
+
+resultScreen.textContent = "";
 let input = "";
 let operations = [];
 
@@ -18,6 +22,9 @@ function multiply(a, b){
 }
 
 function divide(a,b){
+    if(b == 0){
+        throw "Cannot divide by zero";
+    }
     return (Number)(a/b);
 }
 
@@ -43,27 +50,25 @@ function initializeListeners(){
 }
 
 function intepretInput(e){
-    input += e.target.textContent;
-    screen.textContent = input;
-    console.log(e.target.className);
+    if(resultScreen.textContent.length > 0){
+        reset();
+    }
     //Computes the function
-    if(e.target.id == "equals"){
+    if(e.target.id === "equals"){
         compute();
-    } else if(e.target.id == "clear"){
-        input = "";
-        screen.textContent = "";
-        operations = [];
-    } else if(e.target.className == "operator"){
+    } else if(e.target.id === "clear"){
+        clear();
+    } else if(e.target.className === "operator"){
         addOperator(e.target);
-    } else if(e.target.className == "digit"){
+    } else if(e.target.className === "digit"){
         addDigit(e.target);
     }
 }
 function addDigit(digitElement){
     let digit = parseInt(digitElement.textContent);
-    console.log(digit);
+    updateScreen(typingScreen, digit);
     //If there are no operations, creates a new one with the given digit and no operation
-    if(operations.length == 0){
+    if(operations.length === 0){
         newNode(digit, "end");
     } else if(operations[operations.length - 1].operation !== "end"){
         //Need more robustness I think
@@ -72,18 +77,24 @@ function addDigit(digitElement){
         //Adds new digit that was pressed to end of the latest number
         let currentDigit = operations[operations.length -1].number;
         let newNumber = (currentDigit.toString() + digit.toString());
-        console.log(newNumber)
+
         operations[operations.length -1].number = parseInt(newNumber); 
     }
 }
 function addOperator(operatorElement){
     let operator = operatorElement.textContent;
+    let validInput = false;
     //-1 is allowed as the first operator treat it as a -1 multiplying the next incoming number
-    if(operator === "-" && operations.length == 0){
+    if(operator === "-" && operations.length === 0){
         newNode(-1, "*");
+        validInput = true;
     } else if(operations.length > 0){
         //Requires there to be a number to operate on
         operations[operations.length - 1].operation = operator;
+        validInput = true;
+    }
+    if(validInput){
+        updateScreen(typingScreen, operator);
     }
 }
 
@@ -96,9 +107,16 @@ function newNode(digit, op){
 function compute(){
     for(let i  = 0; i < operations.length - 1; i++){
         let currentOp = operations[i].operation;
-        if(currentOp === "*" || currentOp == "/"){
+        if(currentOp === "*" || currentOp === "/"){
             //Calculates using current number and operation as well as the next number
-            result = operate(currentOp, operations[i].number, operations[i + 1].number);
+            try{
+                result = operate(currentOp, operations[i].number, operations[i + 1].number);
+            } catch(error){
+                alert("You cannt divide by zero");
+                clear();
+                return;
+            }
+            
 
             operations[i].number = result;
             operations[i].operation = operations[i + 1].operation;
@@ -111,7 +129,7 @@ function compute(){
     //Repeated to allow for order of operations
     for(let i  = 0; i < operations.length - 1; i++){
         let currentOp = operations[i].operation;
-        if(currentOp === "-" || currentOp == "+"){
+        if(currentOp === "-" || currentOp === "+"){
             //Calculates using current number and operation as well as the next number
             result = operate(currentOp, operations[i].number, operations[i + 1].number);
 
@@ -123,5 +141,22 @@ function compute(){
 
         }
     }
-    document.querySelector("#screen").textContent += Math.round(operations[0].number*100)/100;
+    let roundedResult = Math.round(operations[0].number*100)/100;
+    updateScreen(resultScreen, "= " + roundedResult);
+}
+
+function updateScreen(element, newText){
+    element.textContent += newText;
+}
+
+function clear(){
+    input = "";
+    typingScreen.textContent = "";
+    resultScreen.textContent = "";
+    operations = [];
+}
+
+function reset(){
+    resultScreen.textContent = "";
+    typingScreen.textContent = operations[0].number;
 }
