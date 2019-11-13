@@ -7,7 +7,7 @@ const resultScreen = screen.querySelector("#bottom");
 resultScreen.textContent = "";
 let input = "";
 let operations = [];
-
+let negative = false;
 
 function add(a, b){
     return (Number)(a + b);
@@ -66,7 +66,12 @@ function intepretInput(e){
 }
 function addDigit(digitElement){
     let digit = parseInt(digitElement.textContent);
-    updateScreen(typingScreen, digit);
+    if(negative){
+        digit *= -1;
+        negative = false;
+    }
+
+    updateScreen(typingScreen, Math.abs(digit));
     //If there are no operations, creates a new one with the given digit and no operation
     if(operations.length === 0){
         newNode(digit, "end");
@@ -84,10 +89,16 @@ function addDigit(digitElement){
 function addOperator(operatorElement){
     let operator = operatorElement.textContent;
     let validInput = false;
+
     //-1 is allowed as the first operator treat it as a -1 multiplying the next incoming number
-    if(operator === "-" && operations.length === 0){
-        newNode(-1, "*");
-        validInput = true;
+    if(operator === "-" ){
+        if(operations.length > 0 && operations[operations.length - 1].operation == "end"){
+            operations[operations.length - 1].operation = operator;
+            validInput = true;
+        } else{
+            negative = true;
+            validInput = true;
+        }
     } else if(operations.length > 0){
         //Requires there to be a number to operate on
         operations[operations.length - 1].operation = operator;
@@ -112,7 +123,7 @@ function compute(){
             try{
                 result = operate(currentOp, operations[i].number, operations[i + 1].number);
             } catch(error){
-                alert("You cannt divide by zero");
+                alert("You cannot divide by zero");
                 clear();
                 return;
             }
